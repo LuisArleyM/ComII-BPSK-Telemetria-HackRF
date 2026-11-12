@@ -172,9 +172,7 @@ Seis barridos completos (600 000 bits por punto, 9.1 millones de bits en total),
 
 ![Curva BER simulada vs teoría](img/fase4/curva_BER_comparacion.png)
 
-![Curva en el QT GUI Vector Sink](img/fase4/sim_curva_ber_vector_sink.png)
-
-*Arriba: curva dibujada desde `curva_BER_simulacion.csv` (el CSV que escribe `e_BER_CSV`, sin editar) junto con la teoría. Abajo: la misma curva en el QT GUI Vector Sink de GNU Radio (log10 BER vs Eb/N0).*
+*Curva dibujada con [`scripts/analizar_curva_BER.py`](https://github.com/LuisArleyM/ComII-BPSK-Telemetria-HackRF/blob/main/scripts/analizar_curva_BER.py) directamente desde `curva_BER_simulacion.csv`, el CSV que escribe `e_BER_CSV` durante la ejecución (sin editar), junto con la teoría. Los triángulos huecos son puntos sin errores, dibujados en la cota 3/N.*
 
 | Eb/N0 [dB] | Errores | Bits | BER medida | BER teórica |
 |---|---|---|---|---|
