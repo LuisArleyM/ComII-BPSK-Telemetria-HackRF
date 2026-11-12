@@ -1,0 +1,8 @@
+title: "Telemetría industrial BPSK con HackRF One"
+description: "Proyecto final de Comunicaciones II (27145) — Universidad Industrial de Santander. Luis Arley Martínez Caballero y Johan Sebastián Gómez Hernández."
+theme: jekyll-theme-cayman
+lang: es
+markdown: kramdown
+kramdown:
+  input: GFM
+  math_engine: mathjax
