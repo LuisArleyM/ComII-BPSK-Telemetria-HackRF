@@ -1,0 +1,772 @@
+options:
+  parameters:
+    author: Luis Arley Martinez Caballero - Johan Sebastian Gomez Hernandez
+    catch_exceptions: 'True'
+    category: '[GRC Hier Blocks]'
+    cmake_opt: ''
+    comment: ''
+    copyright: ''
+    description: BFSK de fase continua, Rb = 32 kb/s, desviacion +-16 kHz; mismos impulsos que el caso BPSK.
+    gen_cmake: 'On'
+    gen_linking: dynamic
+    generate_options: qt_gui
+    hier_block_src_path: '.:'
+    id: Enlace_Beta_Impulsivo_BFSK
+    max_nouts: '0'
+    output_language: python
+    placement: (0,0)
+    qt_qss_theme: ''
+    realtime_scheduling: ''
+    run: 'True'
+    run_command: '{python} -u {filename}'
+    run_options: prompt
+    sizing_mode: fixed
+    thread_safe_setters: ''
+    title: S1 Telemetria industrial - BFSK con perturbacion impulsiva (comparacion)
+    window_size: (1500,950)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 8.0
+    rotation: 0
+    state: enabled
+blocks:
+- name: Rs
+  id: variable
+  parameters:
+    comment: 'Ficha tecnica S1: 32 ksym/s'
+    value: '32000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 200
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: Sps
+  id: variable
+  parameters:
+    comment: ''
+    value: '8'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 290
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: samp_rate
+  id: variable
+  parameters:
+    comment: fs = 256 kS/s
+    value: Rs*Sps
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 370
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: N_imp
+  id: variable
+  parameters:
+    comment: 'Periodo del impulso: 256 muestras = 1 ms'
+    value: '256'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 480
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: noise_amp
+  id: variable_qtgui_range
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: Ruido base AWGN (noise_amp)
+    min_len: '200'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '0'
+    step: '0.01'
+    stop: '1'
+    value: '0.1'
+    widget: counter_slider
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1300
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: A_imp
+  id: variable_qtgui_range
+  parameters:
+    comment: ''
+    gui_hint: ''
+    label: Amplitud del impulso (0 / 0.3 / 0.6 / 1.0)
+    min_len: '200'
+    orient: QtCore.Qt.Horizontal
+    rangeType: float
+    start: '0'
+    step: '0.05'
+    stop: '1.5'
+    value: '0.6'
+    widget: counter_slider
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1500
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: import_0
+  id: import
+  parameters:
+    alias: ''
+    comment: ''
+    imports: import math
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 120.0
+    rotation: 0
+    state: enabled
+- name: fuente_bits
+  id: analog_random_source_x
+  parameters:
+    comment: Bits aleatorios 0/1 (cadena del GRC base)
+    type: byte
+    min: '0'
+    max: '2'
+    num_samps: '65536'
+    repeat: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 8
+    - 300.0
+    rotation: 0
+    state: enabled
+- name: pack_bits
+  id: blocks_pack_k_bits_bb
+  parameters:
+    comment: ''
+    k: '8'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 200
+    - 300.0
+    rotation: 0
+    state: enabled
+- name: unpack_bits
+  id: blocks_packed_to_unpacked_xx
+  parameters:
+    comment: ''
+    type: byte
+    bits_per_chunk: bps
+    endianness: gr.GR_MSB_FIRST
+    num_ports: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 360
+    - 300.0
+    rotation: 0
+    state: enabled
+- name: ruido
+  id: analog_noise_source_x
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: AWGN base del GRC original (noise_amp = 0.10)
+    type: complex
+    noise_type: analog.GR_GAUSSIAN
+    amp: noise_amp
+    seed: '0'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 700
+    - 440.0
+    rotation: 0
+    state: enabled
+- name: impulsos
+  id: blocks_vector_source_x
+  parameters:
+    comment: 'Perturbacion impulsiva: 255 ceros y un impulso (cada 1 ms)'
+    type: complex
+    vector: '[0j]*(N_imp-1) + [A_imp+0j]'
+    repeat: 'True'
+    tags: '[]'
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 900
+    - 440.0
+    rotation: 0
+    state: enabled
+- name: sumar_ruido
+  id: blocks_add_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: 'Add original: senal + AWGN'
+    type: complex
+    num_inputs: '2'
+    vlen: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 900
+    - 320.0
+    rotation: 0
+    state: enabled
+- name: sumar_impulsos
+  id: blocks_add_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: 'Segundo Add: senal + AWGN + impulsos (despues del ruido, como pide la guia)'
+    type: complex
+    num_inputs: '2'
+    vlen: '1'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1080
+    - 340.0
+    rotation: 0
+    state: enabled
+- name: bps
+  id: variable
+  parameters:
+    comment: ''
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 560
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: Rb
+  id: variable
+  parameters:
+    comment: Rb = 32 kb/s
+    value: Rs*bps
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 640
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: desv
+  id: variable
+  parameters:
+    comment: Desviacion +-16 kHz (separacion de tonos = Rb)
+    value: '16000'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 720
+    - 8.0
+    rotation: 0
+    state: enabled
+- name: nrz
+  id: digital_chunks_to_symbols_xx
+  parameters:
+    affinity: ''
+    alias: ''
+    comment: bit -> -1/+1
+    dimension: '1'
+    in_type: byte
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    num_ports: '1'
+    out_type: float
+    symbol_table: (-1.0, 1.0)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 520
+    - 300.0
+    rotation: 0
+    state: enabled
+- name: repetir
+  id: blocks_repeat
+  parameters:
+    comment: ''
+    type: float
+    interp: Sps
+    vlen: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 700
+    - 300.0
+    rotation: 0
+    state: enabled
+- name: vco
+  id: analog_frequency_modulator_fc
+  parameters:
+    comment: 'Modulador FM: tonos en -16 kHz y +16 kHz'
+    sensitivity: 2*math.pi*desv/samp_rate
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 860
+    - 300.0
+    rotation: 0
+    state: enabled
+- name: throttle
+  id: blocks_throttle
+  parameters:
+    comment: ''
+    type: complex
+    samples_per_second: samp_rate
+    vlen: '1'
+    ignoretag: 'True'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1040
+    - 220.0
+    rotation: 0
+    state: enabled
+- name: fi_antes
+  id: analog_quadrature_demod_cf
+  parameters:
+    comment: Frecuencia instantanea normalizada (+-1 = +-16 kHz)
+    gain: samp_rate/(2*math.pi*desv)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1080
+    - 560.0
+    rotation: 0
+    state: enabled
+- name: fi_despues
+  id: analog_quadrature_demod_cf
+  parameters:
+    comment: ''
+    gain: samp_rate/(2*math.pi*desv)
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1240
+    - 560.0
+    rotation: 0
+    state: enabled
+- name: tiempo
+  id: qtgui_time_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    axislabels: 'True'
+    color1: blue
+    color10: dark blue
+    color2: red
+    color3: green
+    color4: black
+    color5: cyan
+    color6: magenta
+    color7: yellow
+    color8: dark red
+    color9: dark green
+    comment: ''
+    ctrlpanel: 'False'
+    entags: 'True'
+    grid: 'True'
+    gui_hint: ''
+    label1: Con impulsos
+    label10: Signal 10
+    label2: Sin impulsos (antes)
+    label3: Signal 3
+    label4: Signal 4
+    label5: Signal 5
+    label6: Signal 6
+    label7: Signal 7
+    label8: Signal 8
+    label9: Signal 9
+    legend: 'True'
+    marker1: '-1'
+    marker10: '-1'
+    marker2: '-1'
+    marker3: '-1'
+    marker4: '-1'
+    marker5: '-1'
+    marker6: '-1'
+    marker7: '-1'
+    marker8: '-1'
+    marker9: '-1'
+    name: '"Frecuencia instantanea normalizada (1 = +16 kHz) - 4 ms"'
+    nconnections: '2'
+    size: '1024'
+    srate: samp_rate
+    stemplot: 'False'
+    style1: '1'
+    style10: '1'
+    style2: '1'
+    style3: '1'
+    style4: '1'
+    style5: '1'
+    style6: '1'
+    style7: '1'
+    style8: '1'
+    style9: '1'
+    tr_chan: '0'
+    tr_delay: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_tag: '""'
+    type: float
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    ylabel: Amplitud
+    ymax: '4'
+    ymin: '-4'
+    yunit: '""'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1400
+    - 520.0
+    rotation: 0
+    state: enabled
+- name: psd
+  id: qtgui_freq_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    average: '0.05'
+    axislabels: 'True'
+    bw: samp_rate
+    color1: '"blue"'
+    color10: '"dark blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    ctrlpanel: 'False'
+    fc: '0'
+    fftsize: '4096'
+    freqhalf: 'True'
+    grid: 'True'
+    gui_hint: ''
+    label: Relative Gain
+    label1: Senal + AWGN + impulsos
+    label10: ''
+    label2: Senal + AWGN (referencia)
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    maxoutbuf: '0'
+    minoutbuf: '0'
+    name: '"PSD BFSK (fs = 256 kS/s, FFT 4096)"'
+    nconnections: '2'
+    norm_window: 'False'
+    showports: 'False'
+    tr_chan: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_tag: '""'
+    type: complex
+    units: dB
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    wintype: window.WIN_BLACKMAN_hARRIS
+    ymax: '10'
+    ymin: '-90'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1400
+    - 300.0
+    rotation: 0
+    state: enabled
+- name: plano_iq
+  id: qtgui_const_sink_x
+  parameters:
+    affinity: ''
+    alias: ''
+    alpha1: '1.0'
+    alpha10: '1.0'
+    alpha2: '1.0'
+    alpha3: '1.0'
+    alpha4: '1.0'
+    alpha5: '1.0'
+    alpha6: '1.0'
+    alpha7: '1.0'
+    alpha8: '1.0'
+    alpha9: '1.0'
+    autoscale: 'False'
+    axislabels: 'True'
+    color1: '"blue"'
+    color10: '"dark blue"'
+    color2: '"red"'
+    color3: '"green"'
+    color4: '"black"'
+    color5: '"cyan"'
+    color6: '"magenta"'
+    color7: '"yellow"'
+    color8: '"dark red"'
+    color9: '"dark green"'
+    comment: ''
+    grid: 'True'
+    gui_hint: ''
+    label1: Senal + AWGN + impulsos
+    label10: ''
+    label2: Senal + AWGN (referencia)
+    label3: ''
+    label4: ''
+    label5: ''
+    label6: ''
+    label7: ''
+    label8: ''
+    label9: ''
+    legend: 'True'
+    marker1: '0'
+    marker10: '-1'
+    marker2: '-1'
+    marker3: '-1'
+    marker4: '-1'
+    marker5: '-1'
+    marker6: '-1'
+    marker7: '-1'
+    marker8: '-1'
+    marker9: '-1'
+    name: '"Plano I-Q BFSK (envolvente constante)"'
+    nconnections: '2'
+    size: '2048'
+    style1: '0'
+    style10: '0'
+    style2: '0'
+    style3: '0'
+    style4: '0'
+    style5: '0'
+    style6: '0'
+    style7: '0'
+    style8: '0'
+    style9: '0'
+    tr_chan: '0'
+    tr_level: '0.0'
+    tr_mode: qtgui.TRIG_MODE_FREE
+    tr_slope: qtgui.TRIG_SLOPE_POS
+    tr_tag: '""'
+    type: complex
+    update_time: '0.10'
+    width1: '1'
+    width10: '1'
+    width2: '1'
+    width3: '1'
+    width4: '1'
+    width5: '1'
+    width6: '1'
+    width7: '1'
+    width8: '1'
+    width9: '1'
+    xmax: '2.5'
+    xmin: '-2.5'
+    ymax: '2.5'
+    ymin: '-2.5'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate:
+    - 1400
+    - 420.0
+    rotation: 0
+    state: enabled
+connections:
+- - fuente_bits
+  - '0'
+  - pack_bits
+  - '0'
+- - pack_bits
+  - '0'
+  - unpack_bits
+  - '0'
+- - unpack_bits
+  - '0'
+  - nrz
+  - '0'
+- - nrz
+  - '0'
+  - repetir
+  - '0'
+- - repetir
+  - '0'
+  - vco
+  - '0'
+- - vco
+  - '0'
+  - throttle
+  - '0'
+- - throttle
+  - '0'
+  - sumar_ruido
+  - '0'
+- - ruido
+  - '0'
+  - sumar_ruido
+  - '1'
+- - sumar_ruido
+  - '0'
+  - sumar_impulsos
+  - '0'
+- - impulsos
+  - '0'
+  - sumar_impulsos
+  - '1'
+- - sumar_ruido
+  - '0'
+  - fi_antes
+  - '0'
+- - sumar_impulsos
+  - '0'
+  - fi_despues
+  - '0'
+- - fi_despues
+  - '0'
+  - tiempo
+  - '0'
+- - fi_antes
+  - '0'
+  - tiempo
+  - '1'
+- - sumar_impulsos
+  - '0'
+  - psd
+  - '0'
+- - sumar_ruido
+  - '0'
+  - psd
+  - '1'
+- - sumar_impulsos
+  - '0'
+  - plano_iq
+  - '0'
+- - sumar_ruido
+  - '0'
+  - plano_iq
+  - '1'
+metadata:
+  file_format: 1
+  grc_version: 3.10.11.0
