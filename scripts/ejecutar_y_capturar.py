@@ -170,8 +170,13 @@ def paso_sim(barridos=5, timeout=1500):
     tb = cls()
     tb.set_acelerar(100000)          # sin limite practico de velocidad
     import math
-    tb.set_costas_bw(2 * math.pi / costas_den())
-    print('[sim] costas_bw = 2*pi/%d' % costas_den())
+    fden, cden = lazos()
+    tb.set_costas_bw(2 * math.pi / cden)
+    if hasattr(tb, 'set_fll_bw'):
+        tb.set_fll_bw(2 * math.pi / fden)
+    tb.fll.set_loop_bandwidth(2 * math.pi / fden)
+    tb.costas.set_loop_bandwidth(2 * math.pi / cden)
+    print('[sim] fll_bw = 2*pi/%d, costas_bw = 2*pi/%d' % (fden, cden))
     sinks = ['curva_ber', 'rx_const_sincronizada', 'rx_espectro_barrido', 'offset_hz',
              'ebn0_actual', 'ber_desde_enganche']
     preparar(tb, sinks, Qt)
@@ -188,6 +193,9 @@ def paso_sim(barridos=5, timeout=1500):
         if not capt_media and cmin >= blk.bits_por_punto:
             capturar(tb, sinks, os.path.join(IMG, 'fase4'), 'sim_1barrido', app)
             capt_media = True
+        nb = cmin // blk.bits_por_punto
+        if nb >= 1:
+            capturar(tb, ['curva_ber'], os.path.join(IMG, 'fase4'), 'sim_barrido%d' % nb, app)
         if cmin >= meta:
             break
     esperar(app, 3.0)
@@ -272,49 +280,58 @@ def enlace(nbits, ebn0=None, costas_bw=None, fll_bw=None, pfb_bw=None):
 
 
 def paso_costas(nbits=150000):
-    """Estudio del ancho de banda del lazo de Costas (y saltos de ciclo) a Eb/N0 bajos."""
+    """Estudio conjunto de los anchos de banda de la FLL y del lazo de Costas a Eb/N0 bajos.
+    Se mide la BER real (incluidos los saltos de ciclo de 180 grados) en 4 puntos."""
     import math
     import numpy as np
     from math import erfc, sqrt
     filas = []
-    print('[costas] costas_bw    Eb/N0   BER medida   BER teoria   saltos180  reenganches')
-    for den in (100, 200, 400, 800):
-        for eb in (0.0, 2.0, 4.0, 6.0):
-            r, x, b, blk = enlace(nbits, ebn0=eb, costas_bw=2 * math.pi / den)
-            i0 = 5000
-            ber = np.count_nonzero(r[i0:] != x[i0:]) / max(len(r) - i0, 1)
-            teo = 0.5 * erfc(sqrt(10 ** (eb / 10)))
-            filas.append((den, eb, ber, teo, blk.n_saltos, blk.n_locks))
-            print('[costas] 2pi/%-5d  %5.1f   %.3e    %.3e   %8d  %8d' % (den, eb, ber, teo, blk.n_saltos, blk.n_locks))
-    with open(os.path.join(RAIZ, 'resultados', 'simulacion', 'estudio_costas.csv'), 'w') as f:
-        f.write('costas_bw_den,EbN0_dB,BER,BER_teorica,saltos_180,enganches\n')
+    print('[lazos] fll_bw     costas_bw   Eb/N0   BER medida   BER teoria   saltos180  reenganches')
+    for fden in (400, 1000, 2500):
+        for cden in (50, 100, 200):
+            for eb in (0.0, 2.0, 4.0, 6.0):
+                r, x, b, blk = enlace(nbits, ebn0=eb, costas_bw=2 * math.pi / cden, fll_bw=2 * math.pi / fden)
+                i0 = 5000
+                ber = np.count_nonzero(r[i0:] != x[i0:]) / max(len(r) - i0, 1)
+                teo = 0.5 * erfc(sqrt(10 ** (eb / 10)))
+                filas.append((fden, cden, eb, ber, teo, blk.n_saltos, blk.n_locks))
+                print('[lazos] 2pi/%-5d  2pi/%-5d  %5.1f   %.3e    %.3e   %8d  %8d'
+                      % (fden, cden, eb, ber, teo, blk.n_saltos, blk.n_locks))
+    with open(os.path.join(RAIZ, 'resultados', 'simulacion', 'estudio_lazos.csv'), 'w') as f:
+        f.write('fll_bw_den,costas_bw_den,EbN0_dB,BER,BER_teorica,saltos_180,enganches\n')
         for fila in filas:
-            f.write('%d,%.1f,%.6e,%.6e,%d,%d\n' % fila)
-    # mejor: menor suma de log10(BER/teoria) en los 4 puntos
+            f.write('%d,%d,%.1f,%.6e,%.6e,%d,%d\n' % fila)
     puntaje = {}
-    for den, eb, ber, teo, ns, nl in filas:
-        puntaje[den] = puntaje.get(den, 0.0) + math.log10(max(ber, 1e-7) / teo)
+    for fden, cden, eb, ber, teo, ns, nl in filas:
+        puntaje[(fden, cden)] = puntaje.get((fden, cden), 0.0) + math.log10(max(ber, 1e-7) / teo)
     mejor = min(puntaje, key=puntaje.get)
-    print('[costas] puntaje (suma log10 BER/teoria):', {k: round(v, 3) for k, v in puntaje.items()})
-    print('[costas] ELEGIDO costas_bw = 2*pi/%d' % mejor)
-    with open(os.path.join(RAIZ, 'resultados', 'simulacion', 'costas_elegido.txt'), 'w') as f:
-        f.write(str(mejor))
+    print('[lazos] puntaje (suma log10 BER/teoria):', {'%d/%d' % k: round(v, 3) for k, v in puntaje.items()})
+    print('[lazos] ELEGIDO fll_bw = 2*pi/%d, costas_bw = 2*pi/%d' % mejor)
+    with open(os.path.join(RAIZ, 'resultados', 'simulacion', 'lazos_elegidos.txt'), 'w') as f:
+        f.write('%d,%d' % mejor)
 
 
 # ------------------------------------------------------------------ condicion limpia
-def costas_den():
-    ruta = os.path.join(RAIZ, 'resultados', 'simulacion', 'costas_elegido.txt')
+def lazos():
+    """(fll_den, costas_den) elegidos por el estudio; por defecto (400, 100)."""
+    ruta = os.path.join(RAIZ, 'resultados', 'simulacion', 'lazos_elegidos.txt')
     try:
-        return int(open(ruta).read().strip())
+        f, c = open(ruta).read().strip().split(',')
+        return int(f), int(c)
     except Exception:
-        return 100
+        return 400, 100
+
+
+def costas_den():
+    return lazos()[1]
 
 
 def paso_limpio(nbits=200000):
     """Mismo Tx + canal + receptor de SIM_LAZO, SIN e_EbN0_Sweep: BER ~ 0."""
     import math
     import numpy as np
-    r, x, b, blk = enlace(nbits, ebn0=None, costas_bw=2 * math.pi / costas_den())
+    fden, cden = lazos()
+    r, x, b, blk = enlace(nbits, ebn0=None, costas_bw=2 * math.pi / cden, fll_bw=2 * math.pi / fden)
     ok = np.where(b >= 0)[0]
     i0 = ok[0] if len(ok) else len(b)
     err = int(np.count_nonzero(r[i0:] != x[i0:]))
@@ -325,8 +342,47 @@ def paso_limpio(nbits=200000):
         print('[limpio] Ningun error en %d bits: BER < 3/N = %.1e (95 %% de confianza)' % (tot, 3.0 / tot))
     with open(os.path.join(RAIZ, 'resultados', 'simulacion', 'condicion_limpia.txt'), 'w') as f:
         f.write('Prueba en condicion limpia (sin e_EbN0_Sweep): canal con CFO 300 Hz, 10 ppm, desfase 0.7 rad\n')
+        f.write('fll_bw=2*pi/%d costas_bw=2*pi/%d\n' % (fden, cden))
         f.write('bits_totales=%d\nbit_enganche=%d\nbits_comparados=%d\nerrores=%d\nBER=%.3e\ncota_3_sobre_N=%.3e\n'
                 % (len(r), i0, tot, err, err / max(tot, 1), 3.0 / max(tot, 1)))
+
+
+# ------------------------------------------------------------------ curva en un Vector Sink
+def paso_curva():
+    """Muestra la curva final del CSV generado por el medidor en un QT GUI Vector Sink
+    (mismo bloque y ejes que el flujograma) y guarda la captura."""
+    import csv
+    try:
+        from PyQt5 import sip
+    except ImportError:
+        import sip
+    from gnuradio import gr, blocks, qtgui
+    Qt, app = app_qt()
+    ruta = os.path.join(RAIZ, 'resultados', 'simulacion', 'curva_BER_simulacion.csv')
+    filas = list(csv.DictReader(open(ruta)))
+    lb = [float(f['log10_BER']) for f in filas]
+    N = len(lb)
+    tb = gr.top_block()
+    src = blocks.vector_source_f(lb, True, N, [])
+    thr = blocks.throttle(gr.sizeof_float * N, 20, True)
+    snk = qtgui.vector_sink_f(N, float(filas[0]['EbN0_dB']), 1.0, 'Eb/N0 [dB]', 'log10(BER)',
+                              'Curva BER simulada (curva_BER_simulacion.csv)', 1, None)
+    snk.set_y_axis(-7, 0)
+    snk.set_update_time(0.1)
+    snk.enable_grid(True)
+    snk.set_line_label(0, 'log10(BER)')
+    snk.set_line_width(0, 3)
+    tb.connect(src, thr, snk)
+    win = sip.wrapinstance(snk.qwidget(), Qt.QWidget)
+    win.resize(1100, 430)
+    win.show()
+    tb.start()
+    esperar(app, 3.0)
+    dest = os.path.join(IMG, 'fase4', 'sim_curva_ber_vector_sink.png')
+    win.grab().save(dest)
+    print('[curva] captura ->', os.path.relpath(dest, RAIZ))
+    tb.stop()
+    tb.wait()
 
 
 # ------------------------------------------------------------------ diagramas
@@ -373,6 +429,7 @@ if __name__ == '__main__':
     for p in pasos:
         try:
             {'compilar': paso_compilar, 'beta': paso_beta, 'sim': paso_sim, 'costas': paso_costas,
+             'curva': paso_curva,
              'limpio': paso_limpio, 'diagramas': paso_diagramas}[p]()
         except Exception:
             print('[ERROR] en el paso', p)
