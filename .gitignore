@@ -1,0 +1,5 @@
+build_grc/
+__pycache__/
+*.pyc
+*.tmp
+resultados/simulacion/TERMINADO.txt
