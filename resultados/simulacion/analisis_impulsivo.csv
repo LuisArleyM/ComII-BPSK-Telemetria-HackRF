@@ -1,0 +1,5 @@
+nivel,A_imp,subida_piso_dB,subida_piso_teorica_dB,BER_BPSK_una_muestra,BER_BPSK_filtro_acoplado,BER_BFSK_discriminador,chasquido_frec_inst_mediana_norm
+Referencia,0.0,0.012,0.000,0.000e+00,0.000e+00,0.000e+00,1.163
+Suave,0.3,0.155,0.150,0.000e+00,0.000e+00,0.000e+00,1.737
+Media,0.6,0.587,0.571,0.000e+00,0.000e+00,0.000e+00,2.376
+Fuerte,1.0,1.455,1.432,7.790e-03,0.000e+00,0.000e+00,3.002

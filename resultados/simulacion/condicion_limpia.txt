@@ -1,0 +1,8 @@
+Prueba en condicion limpia (sin e_EbN0_Sweep): canal con CFO 300 Hz, 10 ppm, desfase 0.7 rad
+fll_bw=2*pi/2500 costas_bw=2*pi/200
+bits_totales=199906
+bit_enganche=1024
+bits_comparados=198882
+errores=0
+BER=0.000e+00
+cota_3_sobre_N=1.508e-05
