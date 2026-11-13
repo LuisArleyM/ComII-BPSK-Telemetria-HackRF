@@ -7,7 +7,7 @@ title: Inicio
 **Proyecto final de Comunicaciones II (27145) — Escuela E3T, Universidad Industrial de Santander**
 
 **Integrantes:** Luis Arley Martínez Caballero · Johan Sebastián Gómez Hernández
-**Docentes:** Omar Tíjaro · Ronald Zamora
+**Docente:** Ronald Zamora
 
 ---
 
