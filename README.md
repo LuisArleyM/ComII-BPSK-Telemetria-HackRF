@@ -9,7 +9,7 @@ Blog del proyecto (GitHub Pages): **https://luisarleym.github.io/ComII-BPSK-Tele
 |---|---|
 | [Inicio](docs/index.md) | Resumen, arquitectura y cómo reproducir |
 | [1. Escenario S1 y simulación con impulsos](docs/01-escenario-beta.md) | Ficha del escenario, GRC con impulsos 0.3/0.6/1.0, PSD, constelación, tiempo, BPSK vs BFSK |
-| [2. Del simulador al HackRF One](docs/02-hackrf.md) | Osmocom Sink/Source, 64 kS/s ↔ 2 MS/s, LO desplazado, receptor, preguntas de investigación |
+| [2. Del simulador al HackRF One](docs/02-hackrf.md) | Osmocom Sink/Source, 64 kS/s ↔ 2 MS/s, LO desplazado, receptor, prueba real 16-QAM con dos HackRF (fotos y video), preguntas de investigación |
 | [3. Medición BER vs Eb/N0](docs/03-ber.md) | Integración de `e_EbN0_Sweep` y `e_BER_Curve`, alineación Tx/Rx, curva simulada, procedimiento experimental |
 | [Bitácora](docs/bitacora.md) | Registro de actividades y problemas |
 
@@ -32,6 +32,7 @@ Blog del proyecto (GitHub Pages): **https://luisarleym.github.io/ComII-BPSK-Tele
 grc/fase2_simulacion/   Enlace_Beta_Impulsivo_BPSK.grc, Enlace_Beta_Impulsivo_BFSK.grc
 grc/fase3_hackrf/       LAB_TX_BPSK_HackRF.grc, LAB_RX_BPSK_HackRF.grc
 grc/fase4_ber/          LAB_RX_BPSK_HackRF_BER.grc (laboratorio), SIM_LAZO_BPSK_BER.grc (simulación)
+grc/clase_16qam/        flujogramas 16-QAM del curso usados en la prueba con dos HackRF (5/11/2026)
 grc/instrumentacion/    e_EbN0_Sweep.py, e_BER_Curve.py*, e_BER_CSV.py*, e_PRBS15_Tx.py, e_Ref_PRBS15_Rx.py,
                         plantilla BER_SDR_INSTRUMENTACION_BASE.grc y README del curso
 resultados/simulacion/  curva_BER_simulacion.csv, conteos, condición limpia, análisis impulsivo, registro
@@ -40,6 +41,17 @@ scripts/                ejecutar_y_capturar.py, analizar_curva_BER.py, analisis_
 ```
 
 \* `e_BER_Curve.py` y `e_BER_CSV.py` llevan una corrección mínima de compatibilidad con GNU Radio 3.10 (clase base `gr.decim_block` y uso de `__file__`), explicada en [3. BER](docs/03-ber.md#36-problemas-encontrados-en-la-instrumentación-y-cómo-se-resolvieron). El algoritmo de medición no se modificó.
+
+## Uso de herramientas de inteligencia artificial
+
+En este proyecto usamos un asistente de IA (Claude, de Anthropic) como herramienta de apoyo, principalmente para:
+
+- adaptar los flujogramas de laboratorio del curso a BPSK e integrar en ellos los bloques de medición BER;
+- escribir bloques auxiliares en Python (fuente PRBS-15 y alineación de la referencia en el receptor) y los scripts de análisis y automatización de capturas;
+- revisar el código de los bloques suministrados, lo que permitió detectar sus incompatibilidades con GNU Radio 3.10;
+- organizar y redactar las entradas del blog.
+
+El equipo definió el escenario y la modulación, hizo las sesiones de laboratorio con los HackRF One (incluida la prueba 16-QAM documentada en la fase 3), ejecutó todas las simulaciones en GNU Radio en su propio computador y es responsable de la revisión y del contenido final. Los datos numéricos publicados (archivos CSV, conteos de errores y capturas) provienen directamente de esas ejecuciones y no fueron editados.
 
 ## Reproducir
 
