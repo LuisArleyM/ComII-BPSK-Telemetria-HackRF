@@ -111,7 +111,75 @@ En recepción se aplica la inversa (4/125) **antes** del receptor digital, que f
 
 Los anchos de banda de la FLL y del lazo de Costas salieron de un estudio de simulación ([3. BER, sección 3.8](03-ber.md)): con valores más anchos el lazo de Costas daba saltos de 180° a Eb/N0 bajo. En simulación (mismo receptor, canal con CFO de 300 Hz, 10 ppm de error de reloj y desfase de 0.7 rad, sin ruido añadido) el receptor se enganchó a los 1024 bits y entregó **0 errores en 198 882 bits** ([`condicion_limpia.txt`](https://github.com/LuisArleyM/ComII-BPSK-Telemetria-HackRF/blob/main/resultados/simulacion/condicion_limpia.txt)).
 
-## 2.6 USRP con UHD (investigación)
+## 2.6 Prueba en el laboratorio: enlace 16-QAM entre dos HackRF One
+
+En la sesión de laboratorio del 5 de noviembre de 2026 ejecutamos los flujogramas de laboratorio del curso con dos HackRF One reales, cada uno conectado a un computador distinto: [`LAB_TX_16QAM_HackRF_MEJORADO.grc`](https://github.com/LuisArleyM/ComII-BPSK-Telemetria-HackRF/blob/main/grc/clase_16qam/LAB_TX_16QAM_HackRF_MEJORADO.grc) y [`LAB_RX_16QAM_HackRF_MEJORADO.grc`](https://github.com/LuisArleyM/ComII-BPSK-Telemetria-HackRF/blob/main/grc/clase_16qam/LAB_RX_16QAM_HackRF_MEJORADO.grc). Tienen la misma arquitectura que usamos después para BPSK:
+
+- Rs = 8 kbaud, Sps = 8 y 64 kS/s → 2 MS/s (125/4).
+- fc = 960 MHz, con el LO desplazado ±200 kHz.
+- Receptor con AGC, FLL, *Polyphase Clock Sync* y receptor de constelación.
+- Cambian la modulación (16-QAM, 4 bits por símbolo) y la trama: preámbulo de 64 símbolos, mensaje de 48 bytes, CRC32 y 24 símbolos de guarda.
+
+La prueba se hizo por aire, con las antenas de los radios y las dos placas cerca una de la otra sobre el mesón.
+
+![Montaje en el laboratorio: dos HackRF One sobre el mesón y el receptor en ejecución](img/fase3/clase16qam_montaje.png)
+
+<video controls width="100%" poster="media/clase_16qam_hackrf_poster.jpg" src="media/clase_16qam_hackrf.mp4"></video>
+
+[Ver el video de la prueba (MP4, 51 s)](media/clase_16qam_hackrf.mp4)
+
+*En la foto y en el video se difuminó el fondo para no publicar a otras personas del laboratorio; el video se publica sin audio.*
+
+### Espectro: confirmación del esquema de LO desplazado
+
+![Espectro y constelación recuperada en el receptor](img/fase3/clase16qam_espectro_constelacion.png)
+
+El espectro del receptor (2 MHz alrededor de 960 MHz, después del desplazamiento digital) muestra tres líneas, y cada una tiene explicación:
+
+| Frecuencia | Qué es | Por qué está ahí |
+|---|---|---|
+| 959.8 MHz | Fuga del oscilador local del **transmisor** | El Tx sintoniza fc − 200 kHz; su portadora residual queda 200 kHz por debajo de la señal |
+| 960.0 MHz | **La señal 16-QAM** (12 kHz de ancho, casi una línea en esta escala) | El Tx la desplaza +200 kHz digitalmente y queda centrada en fc |
+| 960.2 MHz | Pico de DC del **receptor** (la línea más alta) | El Rx sintoniza fc + 200 kHz; su pico de DC queda 200 kHz por encima de la señal y luego lo elimina el remuestreador |
+
+Esta es justo la situación que el LO desplazado busca: los dos picos espurios del hardware quedan a ±200 kHz y **ninguno cae sobre la señal**. Sin ese desplazamiento, la fuga del Tx y el DC del Rx estarían exactamente en el centro de la señal. La constelación recuperada muestra los 16 grupos de 16-QAM bien separados.
+
+### Consola del receptor: tramas, BER y EVM
+
+![Consola del receptor 16-QAM con las estadísticas por trama](img/fase3/clase16qam_consola.png)
+
+El receptor imprime cada 50 tramas: tramas recibidas, tramas verificadas (CRC32 correcto y mensaje idéntico), BER, EVM y la rotación que tuvo que corregir. El mensaje se decodifica correctamente: `LAB GNU RADIO 16QAM HACKRF 2026`. Las cifras que imprime son **acumuladas desde el arranque**, así que incluyen el tiempo de adquisición. Restando dos líneas de la consola se obtiene el comportamiento en régimen:
+
+| Lectura | Trama 7651 | Trama 8101 | Diferencia (450 tramas) |
+|---|---|---|---|
+| Tramas verificadas | 4254 (55.6 %) | 4704 (58.1 %) | **+450 → 100 % de las tramas recientes** |
+| BER acumulada | 2.2144 % | 2.0914 % | errores acumulados ≈ 70 480 en ambos → **0 errores nuevos** |
+| EVM media | 20.22 % | 19.35 % | EVM de las tramas recientes ≈ **4.6 %** (±0.2 %) |
+
+Cada trama lleva 104 símbolos de datos × 4 bits = 416 bits. Entonces:
+
+- **En régimen:** 450 tramas seguidas (187 200 bits) sin un solo error, es decir BER < 3/N ≈ 1.6·10⁻⁵ con 95 % de confianza.
+- **EVM:** el 4.6 % corresponde a una SNR de símbolo (MER) de ≈ 27 dB.
+- **Por qué el valor acumulado es peor:** el 2 % de BER y el 20 % de EVM acumulados vienen de los primeros miles de tramas, mientras se ajustaban las placas y los lazos.
+- **Rotación:** `rot=90` indica que el receptor se enganchó con 90° de error y lo corrigió con el preámbulo. 16-QAM tiene ambigüedad de 90°; BPSK, de 180°. Es el mismo problema que en nuestro sistema resolvemos con la PRBS-15.
+
+### Lo que mostró el video
+
+- **Al inicio:** la constelación sale borrosa y la consola muestra `CRC=ERROR`, mensajes con caracteres equivocados y rotaciones que cambian (0°, 90°, 180°, 270°). El receptor todavía no estaba sincronizado o la señal llegaba débil.
+- **Al acercar una placa a la otra:** aparecen los 16 grupos y las tramas pasan a `CRC=OK`.
+- **Al mover la placa:** la constelación vuelve a dispersarse por un momento y luego se recupera.
+
+Por aire, el nivel recibido y el multitrayecto cambian con la posición. Por eso la Guía 4 pide hacer la medición de BER por **cable con atenuadores**, donde el nivel es estable.
+
+**Qué nos dejó esta prueba para el sistema BPSK:**
+
+- El esquema de LO desplazado funciona tal como se diseñó.
+- La FLL y la recuperación de reloj enganchan con hardware real.
+- La ambigüedad de fase aparece de verdad y hay que resolverla con una secuencia conocida.
+
+Por eso nuestro receptor BPSK conserva la misma arquitectura y añade la referencia PRBS-15 alineada.
+
+## 2.7 USRP con UHD (investigación)
 
 El grupo implementó el enlace con HackRF One. Para un USRP solo cambiaría el bloque de hardware; el resto del flujograma y las tasas se conservan.
 
@@ -126,7 +194,7 @@ El grupo implementó el enlace con HackRF One. Para un USRP solo cambiaría el b
 | Clock / Time Source | Interno, externo (10 MHz + PPS) o GPSDO | Interno; una referencia externa común eliminaría el offset entre radios |
 | Subdevice / Channels | Qué cadena RF usar en equipos de 2 canales (`A:A`, `A:B`) | Un canal |
 
-## 2.7 Errores, advertencias y problemas encontrados
+## 2.8 Errores, advertencias y problemas encontrados
 
 | Problema | Dónde apareció | Causa | Solución |
 |---|---|---|---|
@@ -137,12 +205,14 @@ El grupo implementó el enlace con HackRF One. Para un USRP solo cambiaría el b
 | Ambigüedad de 180° del lazo de Costas | Validación numérica | BPSK es simétrica ante una rotación de π | Detección de polaridad por correlación con la PRBS |
 | Saltos de ciclo de 180° a Eb/N0 bajo (BER 35 % en 0 dB) | Primera curva simulada | FLL demasiado ancha (2π/400): su ruido de frecuencia obligaba a un Costas ancho y ruidoso | Estudio de 9 combinaciones; FLL 2π/2500 y Costas 2π/200, sin saltos |
 | Throttle con hardware | Diseño | Dos relojes en el mismo flujo | Throttle eliminado de los flujogramas de hardware |
+| Constelación irreconocible y `CRC=ERROR` con las placas separadas | Prueba 16-QAM por aire (clase) | Nivel recibido bajo e inestable, multitrayecto | Acercar las placas; para medir BER usar cable con atenuadores |
+| Rotación de la constelación cambiante (0°/90°/180°/270°) al arrancar | Prueba 16-QAM (clase) | Ambigüedad de fase de 16-QAM antes de enganchar | El preámbulo la resuelve (`rot=90`); en BPSK lo hace `e_Ref_PRBS15_Rx` |
 | Mensajes `U` / `O` en consola | Posibles en laboratorio | *Underrun* en Tx / *overflow* en Rx por CPU o USB | Cerrar gráficas pesadas, no subir radio_rate sin necesidad |
 | `HACKRF_ERROR_NOT_FOUND` / dispositivo ocupado | Posibles en laboratorio | Driver USB (en Windows, WinUSB con Zadig) o dos flujogramas usando el mismo radio | Verificar con `hackrf_info`; un flujograma por radio |
 
 *Los problemas de hardware propiamente dichos (offset real medido, nivel, saturación) se completan en la sesión de laboratorio; ver [Bitácora](bitacora.md).*
 
-## 2.8 Preguntas de investigación
+## 2.9 Preguntas de investigación
 
 1. **¿Por qué el Channel Model ya no representa el canal?** Porque el canal ahora es físico: las imperfecciones (atenuación, ruido térmico, offset de frecuencia entre cristales, error de reloj, DC, desbalance I/Q) las ponen los radios y el cable. Mantener el Channel Model sumaría imperfecciones artificiales sobre las reales.
 2. **¿Por qué el hardware hace innecesario el Throttle?** El ADC/DAC del SDR consume o produce muestras a su propio reloj y el USB aplica contrapresión al flujograma. El Throttle sería un segundo reloj, impreciso, que compite con el del radio y provoca *underruns* u *overflows*.
@@ -155,7 +225,7 @@ El grupo implementó el enlace con HackRF One. Para un USRP solo cambiaría el b
 9. **¿Riesgo de conectar dos radios por coaxial sin atenuación?** La potencia de salida del Tx (hasta +15 dBm) supera el máximo absoluto de la entrada del Rx (−5 dBm) y puede dañar su LNA. Aun sin daño, satura el receptor y produce distorsión.
 10. **¿Qué evidencia indica que el problema es de configuración RF y no de la modulación?** Si el mismo receptor digital funciona en simulación (BER ≈ 0) y falla con hardware, el problema está en la interfaz. Señales típicas: PSD sin la señal o desplazada (fc o LO), espectro recortado o con armónicos (saturación por ganancia o amplitud), offset de la FLL en su límite (ppm), constelación girando (CFO no corregido), o la señal encima del pico DC.
 
-## 2.9 Conclusión técnica
+## 2.10 Conclusión técnica
 
 Los parámetros de **comunicaciones** (modulación, mapeo, Rs, Rb, Sps, β, filtros, lazos de sincronización, secuencia de prueba) se diseñan para la aplicación y se conservaron al pasar a hardware. Los parámetros de **interfaz** (radio_rate, fc, desplazamiento del LO, ganancias, ancho de banda RF, argumentos del dispositivo, corrección en ppm) dependen del HackRF y se ajustan sin tocar el diseño. El puente entre ambos mundos es la adaptación de tasa 125/4, y el LO desplazado es la forma más simple de convivir con el pico DC del HackRF.
 
