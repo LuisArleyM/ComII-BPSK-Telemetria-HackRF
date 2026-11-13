@@ -26,4 +26,3 @@ Registro breve de lo realizado, las decisiones y los problemas. Las entradas de 
 | 12/11/2026 | Curva BER simulada final (6 barridos, 9.1 M bits) | 6.91 dB a BER = 10⁻³ (0.12 dB sobre la teoría); sin errores en 11–14 dB; CSV generado por el medidor |
 
 
-*Herramientas de IA:* ver la declaración de uso en la [página de inicio](index.md#uso-de-herramientas-de-inteligencia-artificial).
