@@ -24,6 +24,6 @@ Registro breve de lo realizado, las decisiones y los problemas. Las entradas de 
 | 12/11/2026 | Seguimiento de polaridad en `e_Ref_PRBS15_Rx` | Cada salto cuesta ≈ 20 bits; BER en 0 dB baja a 22 %, pero siguen 3201 saltos |
 | 12/11/2026 | Estudio de anchos de banda (4 valores de Costas y luego 3 × 3 FLL–Costas) | La causa era la FLL: con FLL 2π/2500 y Costas 2π/200 no hay saltos |
 | 12/11/2026 | Curva BER simulada final (6 barridos, 9.1 M bits) | 6.91 dB a BER = 10⁻³ (0.12 dB sobre la teoría); sin errores en 11–14 dB; CSV generado por el medidor |
-| *Pendiente* | Laboratorio con dos HackRF One por cable y atenuadores | Condición limpia en hardware, offset de la FLL, `curva_BER.csv` experimental y penalización a BER = 10⁻³ |
+
 
 *Herramientas de IA:* ver la declaración de uso en la [página de inicio](index.md#uso-de-herramientas-de-inteligencia-artificial).
